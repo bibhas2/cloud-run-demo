@@ -1,3 +1,6 @@
+## Introduction
+This project shows how to deploy a Java API service in Google Cloud Run.
+
 ## Installation
 Install Docker and Google Cloud CLI following their documentations.
 
@@ -16,14 +19,14 @@ Log out and log back in. Make sure that you can run ``docker`` without ``sudo``.
 docker images
 ```
 
-Log into Google Cloud. Here we always use ``us-central1`` region for the rest of the tutorial.
+Log into Google Cloud by running ``gcloud init``. Choose ``us-central1`` as the region and the default project. In this tutorial, we will assume the project ID to be ``strategic-team-458516-f8``.
 
 
 ```
 gcloud init
 ```
 
-Choose the default project. In this tutorial, we will assume the project ID to be ``strategic-team-458516-f8``.
+Setup gcloud as the authentication provider for Docker.
 
 ```
 gcloud auth configure-docker \
@@ -49,9 +52,9 @@ Build the application.
 Build the docker image and test it out.
 
 ```
-docker build -t account-svc:1.0.0 .
+docker build -t account-svc-image:1.0.0 .
 
-docker run -p 8080:8080 -d --rm  account-svc:1.0.0
+docker run -p 8080:8080 -d --rm --name account-svc account-svc-image:1.0.0
 
 curl -v http://localhost:8080/account/hello
 
@@ -61,22 +64,22 @@ docker stop account-svc
 Tag the image with the Google Artifact Registry repository location.
 
 ```
-docker tag account-svc:1.0.0 \
-us-central1-docker.pkg.dev/strategic-team-458516-f8/my-docker-repo/account-svc:1.0.0
+docker tag account-svc-image:1.0.0 \
+us-central1-docker.pkg.dev/strategic-team-458516-f8/my-docker-repo/account-svc-image:1.0.0
 ```
 
 Push the image to the Google Artifact Registry repository.
 
 
 ```
-docker push us-central1-docker.pkg.dev/strategic-team-458516-f8/my-docker-repo/account-svc:1.0.0
+docker push us-central1-docker.pkg.dev/strategic-team-458516-f8/my-docker-repo/account-svc-image:1.0.0
 ```
 
 Create a new service called ``account-svc`` in Google Cloud run.
 
 ```
 gcloud run deploy account-svc \
---image=us-central1-docker.pkg.dev/strategic-team-458516-f8/my-docker-repo/account-svc:1.0.0 \
+--image=us-central1-docker.pkg.dev/strategic-team-458516-f8/my-docker-repo/account-svc-image:1.0.0 \
 --no-invoker-iam-check \
 --port=8080 \
 --region=us-central1 \
@@ -100,12 +103,11 @@ The project number is different from project ID and can be seen in the project s
 ## Deploying an Update
 Rebuild the docker image and push it. You can use the same tag or create a new tag.
 
-
 Re-deploy the service and send all traffic to the new version.
 
 ```
 gcloud run deploy account-svc \
---image=us-central1-docker.pkg.dev/strategic-team-458516-f8/my-docker-repo/account-svc:1.0.0 \
+--image=us-central1-docker.pkg.dev/strategic-team-458516-f8/my-docker-repo/account-svc-image:1.0.0 \
 --region=us-central1 \
 --project=strategic-team-458516-f8 \
  && gcloud run services update-traffic account-svc --to-latest --region=us-central1
